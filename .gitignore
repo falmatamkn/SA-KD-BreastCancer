@@ -216,3 +216,31 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ============================================================
+# SA-KD Breast Cancer Project
+# ============================================================
+
+# BreakHis dataset
+data/
+dataset/
+datasets/
+
+# Trained models and checkpoints
+*.h5
+*.keras
+*.ckpt
+*.weights.h5
+
+# TensorFlow training artifacts
+checkpoint/
+checkpoints/
+logs/
+
+# Large experiment outputs
+*.npy
+*.npz
+
+# OS files
+.DS_Store
+Thumbs.db
