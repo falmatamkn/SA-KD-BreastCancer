@@ -1,4 +1,192 @@
 """
+Teacher and student architectures used in the SA-KD experiments.
+"""
+
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+from tensorflow.keras.applications import EfficientNetB0
+
+from configs.config import INPUT_SHAPE
+
+
+# ============================================================
+# EfficientNetB0 Teacher
+# ============================================================
+
+def build_teacher(input_shape=INPUT_SHAPE, num_classes=2):
+    """
+    Build the ImageNet-pretrained EfficientNetB0 teacher.
+    """
+
+    base_model = EfficientNetB0(
+        include_top=False,
+        weights="imagenet",
+        input_shape=input_shape,
+        name="efficientnetb0",
+    )
+
+    base_model.trainable = False
+
+    inputs = keras.Input(
+        shape=input_shape,
+        name="teacher_input",
+    )
+
+    x = base_model(inputs, training=False)
+
+    x = layers.GlobalAveragePooling2D()(x)
+
+    x = layers.Dropout(0.4)(x)
+
+    x = layers.Dense(
+        128,
+        activation="relu",
+    )(x)
+
+    x = layers.Dropout(0.4)(x)
+
+    outputs = layers.Dense(
+        num_classes,
+        activation="softmax",
+        name="teacher_classifier",
+    )(x)
+
+    return keras.Model(
+        inputs,
+        outputs,
+        name="teacher_efficientnet",
+    )
+
+
+# ============================================================
+# Lightweight CNN Student
+# ============================================================
+
+def build_student(input_shape=INPUT_SHAPE, num_classes=2):
+    """
+    Build the lightweight CNN student.
+
+    The student performs 1/255 input rescaling internally.
+    """
+
+    inputs = keras.Input(
+        shape=input_shape,
+        name="student_input",
+    )
+
+    # Student normalization
+    x = layers.Rescaling(1.0 / 255.0)(inputs)
+
+    # --------------------------------------------------------
+    # Convolutional Block 1
+    # --------------------------------------------------------
+
+    x = layers.Conv2D(
+        16,
+        3,
+        padding="same",
+        use_bias=False,
+    )(x)
+
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.MaxPooling2D()(x)
+
+    # --------------------------------------------------------
+    # Convolutional Block 2
+    # --------------------------------------------------------
+
+    x = layers.Conv2D(
+        32,
+        3,
+        padding="same",
+        use_bias=False,
+    )(x)
+
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.MaxPooling2D()(x)
+
+    # --------------------------------------------------------
+    # Convolutional Block 3
+    # --------------------------------------------------------
+
+    x = layers.Conv2D(
+        64,
+        3,
+        padding="same",
+        use_bias=False,
+    )(x)
+
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.MaxPooling2D()(x)
+
+    # --------------------------------------------------------
+    # Classification Head
+    # --------------------------------------------------------
+
+    x = layers.GlobalAveragePooling2D()(x)
+
+    x = layers.Dropout(0.2)(x)
+
+    x = layers.Dense(
+        64,
+        activation="relu",
+    )(x)
+
+    x = layers.Dropout(0.2)(x)
+
+    outputs = layers.Dense(
+        num_classes,
+        activation="softmax",
+        name="student_classifier",
+    )(x)
+
+    return keras.Model(
+        inputs,
+        outputs,
+        name="student_cnn_small_bn",
+    )
+
+
+# ============================================================
+# Feature and Classifier Extraction for KD
+# ============================================================
+
+def get_classifier_and_features(model):
+    """
+    Locate the final two-class Dense classifier and construct
+    a model exposing the features entering that classifier.
+
+    These are used to reconstruct the pre-softmax logits:
+
+        logits = features @ W + b
+    """
+
+    classifier = None
+
+    for layer in reversed(model.layers):
+        if (
+            isinstance(layer, tf.keras.layers.Dense)
+            and layer.units == 2
+        ):
+            classifier = layer
+            break
+
+    if classifier is None:
+        raise ValueError(
+            "Dense(units=2) classifier not found."
+        )
+
+    feature_model = keras.Model(
+        model.input,
+        classifier.input,
+        name=f"{model.name}_features",
+    )
+
+    return classifier, feature_model"""
 Teacher and student model architectures for SA-KD.
 
 The architectures correspond to the models used in:
