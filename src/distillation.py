@@ -270,3 +270,81 @@ def build_distiller(
     )
 
     return distiller
+
+# ============================================================
+# Final KD Training
+# ============================================================
+
+def train_final_kd_student(
+    teacher,
+    baseline_student,
+    train_ds,
+    val_ds,
+    best_alpha,
+    best_temperature,
+    epochs=30,
+):
+    """
+    Train the final KD student using the alpha* and T* selected
+    during hyperparameter optimization.
+
+    The final student starts from the supervised baseline student
+    weights. Validation AUC is used for early stopping.
+
+    The held-out test set must NOT be used here.
+    """
+
+    from src.models import build_student
+
+    # --------------------------------------------------------
+    # Fresh student initialized from supervised baseline
+    # --------------------------------------------------------
+
+    final_student = build_student()
+
+    final_student.set_weights(
+        baseline_student.get_weights()
+    )
+
+    # --------------------------------------------------------
+    # Build KD trainer with selected alpha* and T*
+    # --------------------------------------------------------
+
+    distiller = build_distiller(
+        student=final_student,
+        teacher=teacher,
+        alpha=best_alpha,
+        temperature=best_temperature,
+        learning_rate=1e-4,
+    )
+
+    # --------------------------------------------------------
+    # Early stopping
+    # --------------------------------------------------------
+
+    early_stopping = keras.callbacks.EarlyStopping(
+        monitor="val_auc",
+        mode="max",
+        patience=10,
+        restore_best_weights=True,
+        verbose=1,
+    )
+
+    print("\nFinal KD Training")
+    print("-----------------")
+    print(f"alpha*: {best_alpha:.4f}")
+    print(f"T*:     {best_temperature:.4f}")
+
+    # --------------------------------------------------------
+    # Final KD training
+    # --------------------------------------------------------
+
+    history = distiller.fit(
+        train_ds,
+        validation_data=val_ds,
+        epochs=epochs,
+        callbacks=[early_stopping],
+        verbose=1,
+    )
+
+    return final_student, history
