@@ -23,7 +23,7 @@ L_total = alpha * L_CE + (1 - alpha) * T^2 * L_KL
 The method is evaluated on the 400x magnification subset of the BreakHis dataset for binary benign-versus-malignant classification.
 
 <p align="center">
-  <img src="assets/BCD_KD_flowchart_easy-1" alt="SA-KD Framework" width="850">
+  <img src="assets/BCD_KD_flowchart_easy-1.png" alt="SA-KD Framework" width="850">
 </p>
 
 <p align="center">
