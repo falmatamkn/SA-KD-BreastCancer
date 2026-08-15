@@ -12,14 +12,6 @@ Accepted at **AFRICAI @ MICCAI 2026**.
 
 This repository contains the implementation of a simulated annealing (SA)-based strategy for optimizing knowledge distillation (KD) hyperparameters for lightweight breast cancer histopathology classification.
 
-<p align="center">
-  <img src="assets/BCD_KD_flowchart_easy-1" alt="SA-KD Framework" width="850">
-</p>
-
-<p align="center">
-  <b>Overview of the proposed SA-optimized knowledge distillation framework.</b>
-</p>
-
 The framework distills knowledge from an ImageNet-pretrained EfficientNetB0 teacher into a lightweight CNN student. Simulated annealing automatically optimizes the KD loss-balancing coefficient alpha and distillation temperature T using validation AUC as the optimization objective.
 
 The KD objective is:
@@ -29,6 +21,14 @@ L_total = alpha * L_CE + (1 - alpha) * T^2 * L_KL
 ```
 
 The method is evaluated on the 400x magnification subset of the BreakHis dataset for binary benign-versus-malignant classification.
+
+<p align="center">
+  <img src="assets/BCD_KD_flowchart_easy-1" alt="SA-KD Framework" width="850">
+</p>
+
+<p align="center">
+  <b>Overview of the proposed SA-optimized knowledge distillation framework.</b>
+</p>
 
 ## Repository Structure
 
